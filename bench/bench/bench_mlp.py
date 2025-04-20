@@ -143,14 +143,43 @@ def bench_mlp(batch, dim1, dim2, n_expts_tot, n_expts_act, x_dtype, w_dtype,
             util = "N/A"
         tflops = sum([tot_flops[w] for w in [8, 16]]) / tot_time * 1e-3
         tbps = tot_bytes / tot_time * 1e-3
+        tot_time_ms_per_run = tot_time * 1e-6 / 100
 
-    return util, tflops, tbps
+    # return util, tflops, tbps, tot_time_ms_per_run
+    return f"{util=:.2f}, {tflops=:.2f}, {tbps=:.2f}, {tot_time_ms_per_run=:.2f}"
 
 
 if __name__ == "__main__":
     has_native_mx4 = torch.cuda.get_device_capability(0)[0] >= 10 or get_cdna_version() == 4
     qxdtype = "fp8" if has_native_mx4 else "bf16"
-    print(bench_mlp(8192, 8192, 8192, 1, 1, "fp8", "fp8", TP=1, EP=1, name="dense"))
-    print(bench_mlp(8192, 8192, 8192, 1, 1, qxdtype, "mx4", TP=1, EP=1, name="dense"))
-    print(bench_mlp(2048, 5120, 8192, 128, 4, "fp8", "fp8", TP=4, EP=1, name="llama4"))
-    print(bench_mlp(2048, 5120, 8192, 128, 4, qxdtype, "mx4", TP=4, EP=1, name="llama4"))
+    # print(bench_mlp(8192, 8192, 8192, 1, 1, "fp8", "fp8", TP=1, EP=1, name="dense"))
+    # print(bench_mlp(8192, 8192, 8192, 1, 1, qxdtype, "mx4", TP=1, EP=1, name="dense"))
+    # print(bench_mlp(2048, 5120, 8192, 128, 4, "fp8", "fp8", TP=4, EP=1, name="llama4"))
+    # print(bench_mlp(2048, 5120, 8192, 128, 4, qxdtype, "mx4", TP=4, EP=1, name="llama4"))
+ 
+    print("V6 MoE FP8")
+    # print(bench_mlp(8192, 12288, 12288, 1, 1, "fp8", "fp8", TP=1, EP=1, name="dense_v6_fp8"))
+    print("V6 MoE FP8 BS=8192: ", bench_mlp(8192, 12288, 49152 * 2, 8, 2, "fp8", "fp8", TP=16, EP=1, name="moe_v6_fp8"))
+    print("V6 MoE FP8 BS=64:   ", bench_mlp(64, 12288, 49152 * 2, 8, 2, "fp8", "fp8", TP=16, EP=1, name="moe_v6_fp8"))
+
+    # print(bench_mlp(8192, 12288, 49152 * 2, 9, 2, "fp8", "fp8", TP=16, EP=1, name="moe_v6_fp8"))
+
+    print("V6 MoE FP4")
+    # print(bench_mlp(8192, 12288, 12288, 1, 1, qxdtype, "mx4", TP=1, EP=1, name="dense_v6_fp4"))
+    print("V6 MoE FP4 BS=8192: ", bench_mlp(8192, 12288, 49152 * 2, 8, 2, qxdtype, "mx4", TP=16, EP=1, name="moe_v6_fp4"))
+    print("V6 MoE FP4 BS=64:   ", bench_mlp(64, 12288, 49152 * 2, 8, 2, qxdtype, "mx4", TP=16, EP=1, name="moe_v6_fp4"))
+
+    # print(bench_mlp(8192, 12288, 49152 * 2, 8, 4, qxdtype, "mx4", TP=16, EP=1, name="moe_v6_fp4"))
+
+    # print(bench_mlp(8192, 12288, 49152 * 2, 9, 2, qxdtype, "mx4", TP=16, EP=1, name="moe_v6_fp4"))
+
+    # print("V6M MoE FP8")
+    # print(bench_mlp(8192, 4608, 18432, 1, 1, "fp8", "fp8", TP=4, EP=1, name="dense_v6m_fp8"))
+    # print(bench_mlp(8192, 4608, 18432, 8, 2, "fp8", "fp8", TP=4, EP=1, name="moe_v6m_fp8"))
+    # print(bench_mlp(8192, 4608, 18432, 9, 2, "fp8", "fp8", TP=4, EP=1, name="moe_v6m_fp8"))
+
+    # print("V6M MoE FP4")
+    # print(bench_mlp(8192, 4608, 18432, 1, 1, qxdtype, "mx4", TP=4, EP=1, name="dense_v6m_fp4"))
+    # print(bench_mlp(8192, 4608, 18432, 8, 2, qxdtype, "mx4", TP=4, EP=1, name="moe_v6m_fp4"))
+    # print(bench_mlp(8192, 4608, 18432, 9, 2, qxdtype, "mx4", TP=4, EP=1, name="moe_v6m_fp4"))
+    
