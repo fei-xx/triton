@@ -53,7 +53,7 @@ class RoutingData:
 # --------------------------
 
 
-def routing(logits, n_expts_act, expt_indx=None, simulated_ep=1):
+def routing(logits, n_expts_act, expt_indx=None, simulated_ep=1, renormalize=True):
     from .topk import topk
     from .reduction import sum
     from .compaction import compaction
@@ -66,7 +66,7 @@ def routing(logits, n_expts_act, expt_indx=None, simulated_ep=1):
     n_tokens, n_expts_tot = logits.shape
     n_gates = n_tokens * n_expts_act
     device = logits.device
-    expt_scal, expt_indx, bitmatrix = topk(logits, n_expts_act)
+    expt_scal, expt_indx, bitmatrix = topk(logits, n_expts_act, renormalize=renormalize)
     # mutate bitmatrix
     if simulated_ep > 1:
         assert n_expts_tot % simulated_ep == 0

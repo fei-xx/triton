@@ -3,7 +3,7 @@ from .topk_details._topk import _topk
 from triton_bench import Bitmatrix
 
 
-def topk(x, k, dim=1, return_bitmatrix=True):
+def topk(x, k, dim=1, return_bitmatrix=True, renormalize=True):
     cdiv = lambda a, b: (a + b - 1) // b
     BLOCK_M = 8
     BLOCK_N = 128
