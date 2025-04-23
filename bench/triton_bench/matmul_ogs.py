@@ -61,10 +61,10 @@ class MicroscalingCtx:
             raise TypeError(f"Weight scale must be uint8. Got {self.weight_scale.dtype}")
 
         # Validate scale tensor dimensions
-        if self.weight_scale.ndim != 3:
-            raise ValueError(
-                f"Weight scale must be 3D (experts, in_dim // BLOCK_SIZE, out_dim). Got {self.weight_scale.shape}"
-            )
+        # if self.weight_scale.ndim != 3:
+        #     raise ValueError(
+        #         f"Weight scale must be 3D (experts, in_dim // BLOCK_SIZE, out_dim). Got {self.weight_scale.shape}"
+        #     )
 
     def check_inputs(self, weights: torch.Tensor) -> None:
         if self.weight_scale is None:
