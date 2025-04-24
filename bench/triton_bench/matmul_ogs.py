@@ -57,8 +57,8 @@ class MicroscalingCtx:
             object.__setattr__(self, "actual_weight_scale_shape", self.weight_scale.shape)
 
         # Validate the scale tensor data type
-        if self.weight_scale.dtype != torch.uint8:
-            raise TypeError(f"Weight scale must be uint8. Got {self.weight_scale.dtype}")
+        if self.weight_scale.dtype not in [torch.uint8, torch.float8_e4m3fn]:
+            raise TypeError(f"Weight scale must be uint8 or float8_e4m3fn. Got {self.weight_scale.dtype}")
 
         # Validate scale tensor dimensions
         # if self.weight_scale.ndim != 3:
