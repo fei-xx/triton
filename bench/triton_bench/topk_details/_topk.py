@@ -38,7 +38,7 @@ def _topk(X, stride_xm,  # inputs
           Yv, Yi, stride_ym,  # topk values/indices
           Bits, stride_rm, n_rows,  # bitmatrix
           n_expts_tot, BLOCK_M: tl.constexpr, N_EXPTS_PAD: tl.constexpr, N_EXPTS_ACT: tl.constexpr,
-          BLOCK_N: tl.constexpr):
+          BLOCK_N: tl.constexpr, renormalize: tl.constexpr):
 
     tl.static_assert(BLOCK_N % 32 == 0)
     tl.static_assert(N_EXPTS_PAD % BLOCK_N == 0)
@@ -55,7 +55,8 @@ def _topk(X, stride_xm,  # inputs
     y = tl.sort(y, dim=1)
     y_indices = y >> 16
     y_values = (y & 0x0000FFFF).to(tl.uint16).to(x_dtype, bitcast=True)
-    y_values = tl.softmax(y_values.to(tl.float32), dim=1, keep_dims=True).to(x_dtype)
+    if renormalize:
+        y_values = tl.softmax(y_values.to(tl.float32), dim=1, keep_dims=True).to(x_dtype)
 
     # write back
     offs_y_n = tl.arange(0, N_EXPTS_ACT)

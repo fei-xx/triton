@@ -28,5 +28,6 @@ def topk(x, k, dim=1, return_bitmatrix=True, renormalize=True):
         n_rows, n_cols,  # shapes
         BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N,  # tunable parameter
         N_EXPTS_PAD=n_cols_pad, N_EXPTS_ACT=k,  # constants
+        renormalize=renormalize,
     )
     return y_vals, y_indx, Bitmatrix(bitmatrix, [n_rows, n_cols])
