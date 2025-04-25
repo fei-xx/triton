@@ -137,8 +137,8 @@ def _downcast_to_mxfp(mx_tensor_ptr, stride_mxt_outer, stride_mxt_quant: tl.cons
 
     tl.static_assert(stride_mxt_quant == 1, f"Output stride, {stride_mxt_quant=} must be 1.")
     tl.static_assert(BLOCK_SIZE_QUANT_DIM % SCALE_VECTOR_SIZE == 0, f"{BLOCK_SIZE_QUANT_DIM=} must be a multiple of {SCALE_VECTOR_SIZE=}")
-    tl.static_assert(SCALE_VECTOR_SIZE == 32 or SCALE_VECTOR_SIZE == 8,
-                     f"{SCALE_VECTOR_SIZE=} must be one of (32, 8)")
+    tl.static_assert(SCALE_VECTOR_SIZE == 32 or SCALE_VECTOR_SIZE == 16,
+                     f"{SCALE_VECTOR_SIZE=} must be one of (32, 16)")
 
     # uint8 signifies two fp4 e2m1 values packed into a single byte
     mx_tensor_dtype: tl.constexpr = mx_tensor_ptr.dtype.element_ty
@@ -146,10 +146,6 @@ def _downcast_to_mxfp(mx_tensor_ptr, stride_mxt_outer, stride_mxt_quant: tl.cons
                      f"Invalid {mx_tensor_dtype=}. Must be uint8 or float8.")
 
     src_dtype: tl.constexpr = src_ptr.dtype.element_ty
-    # if SCALE_VECTOR_SIZE == 32:
-    #     tl.static_assert(mx_scale_ptr.dtype.element_ty == tl.uint8, f"{mx_scale_ptr.dtype.element_ty=} must be uint8")
-    # elif SCALE_VECTOR_SIZE == 8:
-    #     tl.static_assert(mx_scale_ptr.dtype.element_ty == tl.float8e4nv, f"{mx_scale_ptr.dtype.element_ty=} must be float8_e4m3fn")
     tl.static_assert((src_dtype == tl.bfloat16) or (src_dtype == tl.float16), f"{src_dtype=} must be bfloat16 or float16")
     is_fp8: tl.constexpr = mx_tensor_dtype == tl.float8e4nv or mx_tensor_dtype == tl.float8e5
 
@@ -213,11 +209,11 @@ def _upcast_from_mxfp(out_ptr, stride_o_outer, stride_o_quant: tl.constexpr,
     tl.static_assert(dst_dtype == tl.float16 or dst_dtype == tl.bfloat16)
     tl.static_assert(mx_tensor_dtype == tl.uint8 or (mx_tensor_dtype == tl.float8e4nv or mx_tensor_dtype == tl.float8e5),
                      "mx_tensor_ptr must be uint8")
-    tl.static_assert(SCALE_VECTOR_SIZE == 32 or SCALE_VECTOR_SIZE == 8,
-                     f"{SCALE_VECTOR_SIZE=} must be one of (32, 8)")
+    tl.static_assert(SCALE_VECTOR_SIZE == 32 or SCALE_VECTOR_SIZE == 16,
+                     f"{SCALE_VECTOR_SIZE=} must be one of (32, 16)")
     if SCALE_VECTOR_SIZE == 32:
         tl.static_assert(mx_scale_ptr.dtype.element_ty == tl.uint8, "mx_scale_ptr must be uint8")
-    elif SCALE_VECTOR_SIZE == 8:
+    elif SCALE_VECTOR_SIZE == 16:
         tl.static_assert(mx_scale_ptr.dtype.element_ty == tl.float8e4nv, "mx_scale_ptr must be float8e4nv")
 
     # Determine if we are dealing with fp8 types.
@@ -271,7 +267,7 @@ def _upcast_from_mxfp(out_ptr, stride_o_outer, stride_o_quant: tl.constexpr,
             tl.static_assert(dst_dtype == tl.float16)
             dst_scale = (scale.to(tl.uint32) << 23).to(tl.float32, bitcast=True)
             dst_scale = dst_scale.to(tl.float16)
-    elif SCALE_VECTOR_SIZE == 8:
+    elif SCALE_VECTOR_SIZE == 16:
         dst_scale = scale.to(tl.float8e4nv, bitcast=True).to(dst_dtype)
     else:
         raise NotImplementedError(f"{SCALE_VECTOR_SIZE=} is not implemented")
@@ -330,8 +326,8 @@ class DequantScaleRoundingMode(Enum):
 
 class ScaleVectorSize(Enum):
     V1X = 32
-    V2X = 16
-    V4X = 8
+    V2X = 32
+    V4X = 16
 
 SWIZZLE_ALIGN_INNER = 8
 SWIZZLE_SIZE_INNER = 4
@@ -405,9 +401,6 @@ def downcast_to_mxfp(src_tensor: torch.Tensor, out_quant_type: torch.dtype, axis
     if swizzle_axis is not None:
         assert -ndim <= swizzle_axis < ndim, f"Invalid swizzle axis {swizzle_axis=}"
         swizzle_axis = swizzle_axis if swizzle_axis >= 0 else swizzle_axis + ndim
-
-    if SCALE_VECTOR_SIZE == ScaleVectorSize.V2X:
-        raise NotImplementedError(f"{SCALE_VECTOR_SIZE=} is not implemented")
 
     L = src_tensor.shape[axis]
     if out_quant_type == torch.uint8:
